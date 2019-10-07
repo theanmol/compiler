@@ -76,32 +76,39 @@ LE				<=
 MISC_CHAR		[{};:,\.()<=\+\-~@\*/]
 TYPE_ID			[A-Z][a-zA-Z0-9_]*
 OBJECT_ID		[a-z][a-zA-Z0-9_]*
-WHITESPACE		[ \t\n\f\r\v]*
+WHITESPACE		[ \t\f\r\v\n]*
 SINGLELINECOM	--.*\n
-
-%x singlecomment
+%option yylineno
+%x singcmmt
+%x escape
 %%
---		{ BEGIN(singlecomment); }
-<singlecomment>[^\n]  {}
-<singlecomment>\n { BEGIN(INITIAL);}
-<singlecomment><<EOF>> {
-                                BEGIN(INITIAL);
-                                cool_yylval.error_msg = "EOF in comment";
-                                return ERROR;
-                        }
+\n { }
 
-"*)"	{
+"--"    BEGIN(singcmmt);
+<singcmmt>[^\n]*	{ }
+<singcmmt>\n      { 
+	 		curr_lineno = yylineno;
+			BEGIN(INITIAL);
+		 }
+<singcmmt><<EOF>> {
+                	curr_lineno = yylineno;
+                	BEGIN(INITIAL);
+
+        	  }
+
+
+"*)"	{	curr_lineno = yylineno;
 		cool_yylval.error_msg = "Unmatched *)";
 		return ERROR;
 	}
-"(*" {
+"(*" {		curr_lineno = yylineno;
 		BEGIN(COMMENT);
 	 }
-
-<COMMENT>"(*"		{
+	
+<COMMENT>"(*"		{curr_lineno = yylineno;
 			nested++;
 			}
-<COMMENT>"*"+")" 		{
+<COMMENT>"*"+")" 		{curr_lineno = yylineno;
 				if(nested)
 					nested--;
 				else
@@ -113,108 +120,125 @@ SINGLELINECOM	--.*\n
 						cool_yylval.error_msg = "EOF in comment";
 						return ERROR;
 					}
-<COMMENT>\n 	{  }
-<COMMENT>. { }
+<COMMENT>\n 	{ curr_lineno = yylineno;}
+<COMMENT>. {curr_lineno = yylineno; }
 			
-{DARROW}		{ return (DARROW); }
-{CLASS}			{ return (CLASS);  }
-{ELSE}          { return (ELSE);  }
-{FI}             { return (FI);  }
-{IF}             { return (IF);  }
-{IN}            { return (IN);  }
-{INHERITS}       { return (INHERITS);  }
-{LET}            { return (LET);  }
-{LOOP}           { return (LOOP);  }
-{POOL}           { return (POOL);  }
-{THEN}           { return (THEN);  }
-{WHILE}          { return (WHILE);  }
-{CASE}           { return (CASE);  }
-{ESAC}           { return (ESAC);  }
-{OF}             { return (OF);  }
-{NEW}            { return (NEW);  }
-{ISVOID}         { return (ISVOID);  }
-{NOT}            { return (NOT);  }
-{ASSIGN}  		{ return (ASSIGN); }
-{LE}			{ return (LE); }
+{DARROW}		{ curr_lineno = yylineno;return (DARROW); }
+{CLASS}			{ curr_lineno = yylineno;return (CLASS);  }
+{ELSE}          { curr_lineno = yylineno;return (ELSE);  }
+{FI}             { curr_lineno = yylineno;return (FI);  }
+{IF}             { curr_lineno = yylineno;return (IF);  }
+{IN}            { curr_lineno = yylineno;return (IN);  }
+{INHERITS}       {curr_lineno = yylineno; return (INHERITS);  }
+{LET}            {curr_lineno = yylineno; return (LET);  }
+{LOOP}           {curr_lineno = yylineno; return (LOOP);  }
+{POOL}           { curr_lineno = yylineno;return (POOL);  }
+{THEN}           { curr_lineno = yylineno;return (THEN);  }
+{WHILE}          { curr_lineno = yylineno;return (WHILE);  }
+{CASE}           { curr_lineno = yylineno;return (CASE);  }
+{ESAC}           {curr_lineno = yylineno;return (ESAC);  }
+{OF}             { curr_lineno = yylineno;return (OF);  }
+{NEW}            { curr_lineno = yylineno;return (NEW);  }
+{ISVOID}         { curr_lineno = yylineno;return (ISVOID);  }
+{NOT}            { curr_lineno = yylineno;return (NOT);  }
+{ASSIGN}  		{ curr_lineno = yylineno;return (ASSIGN); }
+{LE}			{ curr_lineno = yylineno;return (LE); }
 
-{DIGIT}+		{
+{DIGIT}+		{curr_lineno = yylineno;
 					cool_yylval.symbol = inttable.add_string(yytext);
 					return (INT_CONST);
 				}
 				
-{TRUE}			{ cool_yylval.boolean = 1; return (BOOL_CONST); }
-{FALSE}			{ cool_yylval.boolean = 0; return (BOOL_CONST); }
+{TRUE}			{ curr_lineno = yylineno;cool_yylval.boolean = 1; return (BOOL_CONST); }
+{FALSE}			{ curr_lineno = yylineno;cool_yylval.boolean = 0; return (BOOL_CONST); }
 
 
-{TYPE_ID}		{ 
+{TYPE_ID}		{ curr_lineno = yylineno;
 					cool_yylval.symbol = stringtable.add_string(yytext); 
 					return TYPEID;
 				} 	
-{OBJECT_ID}     {  
+{OBJECT_ID}     {  curr_lineno = yylineno;
 					cool_yylval.symbol = stringtable.add_string(yytext); 
                     return OBJECTID;
 				}
 				
-"\""			{
-					BEGIN(string);
-					string_buf_ptr=string_buf;
-					
-				}
-<string>"\""	{	
-					BEGIN(INITIAL);
-					if(string_buf_ptr - string_buf + 1 > MAX_STR_CONST){
-						*string_buf = '\0';
-						cool_yylval.error_msg = "String too long";
-						return ERROR;
-					}
-					*string_buf_ptr='\0';
-					cool_yylval.symbol = stringtable.add_string(string_buf);
-					return STR_CONST;
+\"		{	curr_lineno = yylineno;
+			BEGIN(string);
+			string_buf_ptr=string_buf;
+		
+		}
+
+
+<string>\"	{	
+			curr_lineno = yylineno;
+			BEGIN(INITIAL);
+			if(string_buf_ptr - string_buf + 1 > MAX_STR_CONST){
+				*string_buf = '\0';
+				cool_yylval.error_msg = "String too long";
+				return ERROR;
+			}
+			*string_buf_ptr='\0';
+			cool_yylval.symbol = stringtable.add_string(string_buf);
+			return STR_CONST;
 		}				
-<string><<EOF>>	{	
-					BEGIN(INITIAL);
-					*string_buf = '\0';
-					cool_yylval.error_msg = "EOF present in string";
-					return ERROR;
-				}
+<string>\\n     {
+                        curr_lineno = yylineno;
+                        *string_buf_ptr++='\n';
+                }
+<string>\\b     {
+                        curr_lineno = yylineno;
+                        *string_buf_ptr++='\b';
+                }
+<string>\\t     {
+                        curr_lineno = yylineno;
+                        *string_buf_ptr++='\t';
+                }
+<string>\\f     {
+                        curr_lineno = yylineno;
+                        *string_buf_ptr++='\f';
+                }
 
-<string>\\[^ntbf] 		{
- 				    *string_buf_ptr++ = yytext[1];
-				}
-<string>\\\n		{	}
-<string>\0		{	
-					BEGIN(INITIAL);
-					*string_buf = '\0';
-					cool_yylval.error_msg = "Null value present in string";
-					return ERROR;
-				}
-<string>\\n  	{
-					*string_buf_ptr++='\n';
-				}
-<string>\\b  	{
-					*string_buf_ptr++='\b';
-				}
-<string>\\t  	{
-					*string_buf_ptr++='\t';
-				}
-<string>\\f  	{
-					*string_buf_ptr++='\f';
-				}				
-<string>\n 		{
-					BEGIN(INITIAL);
-					*string_buf = '\0';
-					cool_yylval.error_msg = "String not terminated";
-					return ERROR;
-				}
-<string>.		{
-					*string_buf_ptr++ = *yytext;
-				}
+<string><<EOF>> {       
+			curr_lineno = yylineno;
+                        BEGIN(INITIAL);
+                        *string_buf = '\0';
+	                cool_yylval.error_msg = "EOF present in string";
+                        return ERROR;
+                }
+
+<string>\\[^ntbf] {
+			curr_lineno = yylineno;
+ 			*string_buf_ptr++ = yytext[1];
+  		 }
+	
+<string>\n	{		curr_lineno = yylineno;
+				BEGIN(INITIAL);
+				*string_buf = '\0';
+				cool_yylval.error_msg = "String not terminated";
+				return ERROR;
+		}
+
+
+<string>\0     {               curr_lineno = yylineno;
+                                BEGIN(escape);
+                                *string_buf = '\0';
+                                cool_yylval.error_msg = "String not terminated";
+                                return ERROR;
+                }
+
+
+<string>.	{
+			curr_lineno = yylineno;
+			*string_buf_ptr++ = *yytext;
+		}
+<escape>[\n|"]		BEGIN(INITIAL);
+<escape>[^\n|"]	
 				
-{MISC_CHAR}		{ return *yytext; }
-{WHITESPACE}     { }
+{MISC_CHAR}		{curr_lineno = yylineno; return *yytext; }
+{WHITESPACE}    { curr_lineno = yylineno;	}
 
 
-.			{
+.			{curr_lineno = yylineno;
 				cool_yylval.error_msg = yytext;
 				return ERROR;
 			}
