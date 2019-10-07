@@ -80,7 +80,7 @@ WHITESPACE		[ \t\f\r\v\n]*
 SINGLELINECOM	--.*\n
 %option yylineno
 %x singcmmt
-%x escape
+%x nullcheck
 %%
 \n { }
 
@@ -197,6 +197,12 @@ SINGLELINECOM	--.*\n
                         curr_lineno = yylineno;
                         *string_buf_ptr++='\f';
                 }
+<string>\\\0    {               curr_lineno = yylineno;
+                                BEGIN(nullcheck);
+                                *string_buf = '\0';
+                                cool_yylval.error_msg = "String not terminated";
+                                return ERROR;
+                }
 
 <string><<EOF>> {       
 			curr_lineno = yylineno;
@@ -220,19 +226,22 @@ SINGLELINECOM	--.*\n
 
 
 <string>\0     {               curr_lineno = yylineno;
-                                BEGIN(escape);
+                                BEGIN(nullcheck);
                                 *string_buf = '\0';
                                 cool_yylval.error_msg = "String not terminated";
                                 return ERROR;
                 }
 
 
+
 <string>.	{
 			curr_lineno = yylineno;
 			*string_buf_ptr++ = *yytext;
 		}
-<escape>[\n|"]		BEGIN(INITIAL);
-<escape>[^\n|"]	
+	
+<nullcheck>[\n|"]		BEGIN(INITIAL);
+<nullcheck>[^\n]         
+
 				
 {MISC_CHAR}		{curr_lineno = yylineno; return *yytext; }
 {WHITESPACE}    { curr_lineno = yylineno;	}
