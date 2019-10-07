@@ -1,0 +1,5 @@
+#name "./lineno3.cool"
+#1 '+'
+#1 OBJECTID abc
+#1 TYPEID DEF
+#1 STR_CONST "string"
