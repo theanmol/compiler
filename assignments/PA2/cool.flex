@@ -154,11 +154,11 @@ SINGLELINECOM	--.*\n
 
 
 {TYPE_ID}		{ curr_lineno = yylineno;
-					cool_yylval.symbol = stringtable.add_string(yytext); 
+					cool_yylval.symbol = idtable.add_string(yytext); 
 					return TYPEID;
 				} 	
 {OBJECT_ID}     {  curr_lineno = yylineno;
-					cool_yylval.symbol = stringtable.add_string(yytext); 
+		cool_yylval.symbol = idtable.add_string(yytext); 
                     return OBJECTID;
 				}
 				
