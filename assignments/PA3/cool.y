@@ -51,7 +51,7 @@
       // Set the line number of the current non-terminal:
       // ***********************************************
       // You can access the line numbers of the i'th item with @i, just
-      // like you acess the value of the i'th exporession with $i.
+      // like you acess the value of the i'th expression with $i.
       //
       // Here, we choose the line number of the last INT_CONST (@3) as the
       // line number of the resulting expression (@$). You are free to pick
@@ -140,6 +140,16 @@
     %type <formals> formal_list
     %type <formal> formal
     %type <expression> expression
+    %type <expression> if_expression
+    %type <expression> let_expression
+    %type <expression> dispatch_expression
+    %type <expression> while_expression
+    %type <expressions> expression_block
+    %type <expressions> expression_list
+    %type <expression> case_expression
+    %type <cases> case_branches
+    %type <case_> case_branch
+
     
     /* Precedence declarations go here. */
     
@@ -230,12 +240,118 @@
     ;
 
     expression:
-{
-}
-;	
-    
+    BOOL_CONST
+    {
+      $$ = bool_const($1);
+    }
+    INT_CONST
+    {
+      $$ = int_const($1);
+    }
+    STR_CONST
+    {
+      $$ = string_const($1);
+    }
+    | OBJECTID
+    {
+      $$ = object($1);
+    }
+    | '(' expression ')'
+    {
+      $$ = $2;
+    }
+    | '{' expression_block '}'
+    {
+      $$ = block($2);
+    }
+    | OBJECTID ASSIGN expression
+    {
+      $$ = assign($1,$3);
+    }
+    | expression LE expression
+    {
+      $$ = leq($1,$3);
+    }
+    | expression '+' expression
+    {
+      $$ = plus($1,$3);
+    }
+    | expression '-' expression
+    {
+      $$ = sub($1,$3);
+    }
+    | expression '*' expression
+    {
+      $$ = mul($1,$3);
+    }
+    | expression '/' expression
+    {
+      $$ = divide($1,$3);
+    }
+    | expression '<' expression
+    {
+      $$ = lt($1,$3);
+    }
+    | expression '=' expression
+    {
+      $$ = eq($1, $3);
+    }
+    | '-' expression
+    {
+    $$ = neg($2);
+    }
+    | if_expression
+    | let_expression
+    | while_expression
+    | case_expression
+    | dispatch_expression
+    ;	
 
+    expression_block:
+    {
 
+    }
+    ;
+
+    expression_list:
+    expression
+    {
+      $$=single_Expressions($1);
+    }
+    | expression_list ',' expression
+    {
+      $$=append_Expressions($1,single_Expressions($2));
+    }
+    ;
+
+    if_expression:
+    {
+
+    }
+    ;
+
+    let_expression:
+    {
+
+    }
+    ;
+
+    while_expression:
+    {
+
+    }
+    ;
+
+    case_expression:
+    {
+
+    }
+    ;
+    dispatch_expression:
+    {
+
+    }
+    ;
     /* end of grammar */
     %%
     
