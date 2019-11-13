@@ -244,11 +244,11 @@
     {
       $$ = bool_const($1);
     }
-    INT_CONST
+    | INT_CONST
     {
       $$ = int_const($1);
     }
-    STR_CONST
+    | STR_CONST
     {
       $$ = string_const($1);
     }
@@ -320,7 +320,7 @@
     }
     | expression_list ',' expression
     {
-      $$=append_Expressions($1,single_Expressions($2));
+      $$=append_Expressions($1,single_Expressions($3));
     }
     ;
 
