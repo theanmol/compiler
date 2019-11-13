@@ -139,7 +139,7 @@
     %type <feature> feature
     %type <formals> formal_list
     %type <formal> formal
-
+    %type <expression> expression
     
     /* Precedence declarations go here. */
     
@@ -188,7 +188,7 @@
     }
     | feature_list feature 
     { 
-      $$ = append_Features($1,single_Feature($2)); 
+      $$ = append_Features($1,single_Features($2)); 
     }
     ;
     
@@ -216,20 +216,25 @@
     {
       $$ = single_Formals($1);
     }
-    | formal_list ',' formal ;
+    | formal_list ',' formal 
     {
       $$ = append_Formals($1,single_Formals($3));
     }
     ;
 
     formal:
-    OBJECTID ':' TYPEID ;
+    OBJECTID ':' TYPEID 
     {
       $$ = formal($1,$3);
     }
     ;
 
+    expression:
+{
+}
+;	
     
+
 
     /* end of grammar */
     %%
