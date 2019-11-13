@@ -300,6 +300,14 @@
     {
     $$ = neg($2);
     }
+    | NEW TYPEID 
+    { 
+      $$ = new_($2); 
+    }
+    | ISVOID expression 
+    { 
+      $$ = isvoid($2); 
+    }
     | if_expression
     | let_expression
     | while_expression
@@ -308,8 +316,13 @@
     ;	
 
     expression_block:
+    : expression
     {
-
+      $$ = single_Expressions($1);
+    }
+    | expression_block ';' expression ';'
+    {
+      $$ = append_Expressions($1, single_Expressions($3));
     }
     ;
 
@@ -325,33 +338,72 @@
     ;
 
     if_expression:
+    IF expression THEN expression FI
     {
-
+      $$ = cond($2, $4, no_expr());
+    }
+    | IF expression THEN expression ELSE expression FI
+    {
+      $$ = cond($2, $4, $6);
     }
     ;
 
     let_expression:
+    LET OBJECTID ':' TYPEID ASSIGN expression IN expression %prec LET
     {
-
+      $$ = let($2, $4, $6, $8);
     }
-    ;
+
 
     while_expression:
+    WHILE expression LOOP expression POOL
     {
-
+      $$ = loop($2, $4);
     }
     ;
 
-    case_expression:
+    case_expression
+    : CASE expression OF case_branches ESAC
     {
-
+      $$ = typcase($2, $4);
     }
     ;
-    dispatch_expression:
-    {
 
+    case_branches
+    : case_branch ';'
+    {
+      $$ = single_Cases($1);
+    }
+    | case_branches case_branch ';'
+    {
+      $$ = append_Cases($1, single_Cases($2));
     }
     ;
+
+    case_branch 
+    : OBJECTID ':' TYPEID DARROW expression
+    {
+      $$ = branch($1, $3, $5);
+    }
+    ;
+
+    dispatch_expression
+  : expression '.' OBJECTID '(' expression_list ')'
+  {
+    $$ = dispatch($1, $3, $5);
+  }
+  | OBJECTID '(' expression_list ')'
+  {
+    Entry *self = idtable.add_string("self");
+    $$ = dispatch(object(self), $1, $3);
+  }
+  | expression '@' TYPEID '.' OBJECTID '(' expression_list ')'
+  {
+    $$ = static_dispatch($1, $3, $5, $7);
+  }
+  ;
+
+    
     /* end of grammar */
     %%
     
