@@ -316,7 +316,7 @@
     ;	
 
     expression_block:
-    : expression
+    expression
     {
       $$ = single_Expressions($1);
     }
