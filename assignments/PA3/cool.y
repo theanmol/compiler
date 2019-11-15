@@ -309,7 +309,7 @@
       $$ = isvoid($2); 
     }
     | if_expression
-    | let_expression
+    | LET let_expression
     | while_expression
     | case_expression
     | dispatch_expression
@@ -349,9 +349,25 @@
     ;
 
     let_expression:
-    LET OBJECTID ':' TYPEID ASSIGN expression IN expression %prec LET
+    OBJECTID ':' TYPEID IN expression
     {
-      $$ = let($2, $4, $6, $8);
+      $$ = let($1,$3,no_expr(),$5);
+    }
+    | OBJECTID ':' TYPEID ASSIGN expression IN expression
+    {
+      $$ = let($1,$3,$5,$7);
+    }
+    | OBJECTID ':' TYPEID ASSIGN expression ',' let_expression
+    {
+      $$ = let($1,$3,$5,$7);
+    }
+    | OBJECTID ':' TYPEID ',' let_expression
+    {
+      $$ = let($1,$3,no_expr(),$5);
+    }
+    | error ',' let_expression
+    {
+      $$ = $3;
     }
 
 
