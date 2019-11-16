@@ -155,9 +155,10 @@
     %left ASSIGN
     %left '+' '-'
     %left '*' '/'
+    %nonassoc '<' '=' LE '~' ISVOID
+    
     %left '@'
     %left '.'    
-    %nonassoc '<' '=' LE
     %%
     /* 
     Save the root of the abstract syntax tree in a global variable.
