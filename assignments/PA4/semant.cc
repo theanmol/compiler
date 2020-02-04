@@ -5,10 +5,12 @@
 #include <stdarg.h>
 #include "semant.h"
 #include "utilities.h"
+#include <bits/stdc++.h>
 
 
 extern int semant_debug;
 extern char *curr_filename;
+map<Symbol, Class_> class_map;
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -86,7 +88,59 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+    install_basic_classes();
 
+    for(int i = classes->first(); classes->more(i); i = classes->next(i)){
+        Class_  cur_cls = classes->nth(i);
+        Symbol name = cur_cls->get_name();
+
+        if (class_map.find(name) != class_map.end()) {
+            semant_error(cur_cls) << "Redefinition of class " << name << "." << std::endl;
+            return;
+        }
+
+        if (name == SELF_TYPE) {
+            semant_error(cur_cls) << "Redefinition of basic class SELF_TYPE." << std::endl;
+            return;
+        }
+
+        class_map[name]=cur_cls;
+    
+    }
+
+
+    if (class_map.find(Main) == class_map.end()) {
+        semant_error() << "Main Class is not defined." << std::endl;
+        return;
+    }
+
+    for(int i = classes->first(); classes->more(i); i = classes->next(i)){
+    
+        Class_  cur_cls = classes->nth(i);
+        Symbol name = cur_cls->get_name();
+
+        for (Symbol parent = cur_cls->get_parent(); parent != Object; cls = class_map[parent], parent = cls->get_parent()) {
+            if (class_map.find(parent) == class_map.end()) {
+                semant_error(cls) << "Parent class " << parent << " is not defined." << std::endl;
+                return;
+            }
+
+            if (parent == Int || parent == Bool || parent == Str || parent == SELF_TYPE) {
+                semant_error(cls) << "Classes cannot inherit from basic class" << parent << std::endl;
+                return;
+            }
+
+            if (parent == cur_cls) {
+                semant_error(cls) << "Inheritance cycle is present." << std::endl;
+                return;
+            }
+        }
+    
+    }
+        
+
+
+    
 }
 
 void ClassTable::install_basic_classes() {
@@ -187,7 +241,13 @@ void ClassTable::install_basic_classes() {
 								     single_Formals(formal(arg2, Int))),
 						      Str, 
 						      no_expr()))),
-	       filename);
+           filename);
+           
+           class_map[Object]= Object_class;
+           class_map[IO]=IO_class;
+           class_map[Int]=Int_class;
+           class_map[Bool]=Bool_class;
+           class_map[Str]=Str_class;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -237,9 +297,10 @@ ostream& ClassTable::semant_error()
      errors. Part 2) can be done in a second stage, when you want
      to build mycoolc.
  */
+
 void program_class::semant()
 {
-    initialize_constants();
+    initialize_constants();  
 
     /* ClassTable constructor may do some semantic analysis */
     ClassTable *classtable = new ClassTable(classes);
